@@ -1,0 +1,296 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, ChevronLeft, RefreshCcw, CheckCircle2, AlertCircle, Database } from 'lucide-react';
+
+// 구글 앱스 스크립트(GAS) 웹앱 URL (배포 후 생성된 URL을 여기에 붙여넣으세요)
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwc_cObbA036QZpyDaer4sD1LuFK5sePuExwll7skB_hGTuxGQVS5BmrBQjw8dMoeTn/exec";
+
+// --- 로젠버그 자아존중감 척도 (RSES) 문항 ---
+// 점수 산정: 매우 그렇지 않다(0), 그렇지 않다(1), 그렇다(2), 매우 그렇다(3)
+// isReverse가 true인 역문항은 점수를 반대로 계산합니다 (0->3, 1->2, 2->1, 3->0).
+const QUESTIONS = [
+  { id: 1, text: "나는 내가 다른 사람들과 마찬가지로 가치 있는 사람이라고 생각한다.", isReverse: false },
+  { id: 2, text: "나는 좋은 성품을 가졌다고 생각한다.", isReverse: false },
+  { id: 3, text: "나는 대체로 실패한 사람이라는 느낌이 든다.", isReverse: true },
+  { id: 4, text: "나는 대부분의 사람들과 같이 일을 잘 할 수 있다.", isReverse: false },
+  { id: 5, text: "나는 나 자신에 대해 자랑할 만한 것이 별로 없다.", isReverse: true },
+  { id: 6, text: "나는 내 자신에 대해 긍정적인 태도를 가지고 있다.", isReverse: false },
+  { id: 7, text: "나는 내 자신에 대해 대체로 만족한다.", isReverse: false },
+  { id: 8, text: "나는 내 자신을 좀 더 존중할 수 있었으면 좋겠다.", isReverse: true },
+  { id: 9, text: "나는 가끔 내 자신이 쓸모없는 사람이라는 느낌이 든다.", isReverse: true },
+  { id: 10, text: "나는 때때로 내가 좋지 않은 사람이라고 생각한다.", isReverse: true }
+];
+
+const OPTIONS = [
+  { label: "매우 그렇지 않다", value: 0 },
+  { label: "그렇지 않다", value: 1 },
+  { label: "그렇다", value: 2 },
+  { label: "매우 그렇다", value: 3 }
+];
+
+export default function App() {
+  const [step, setStep] = useState('intro'); // intro, test, result
+  const [currentQIndex, setCurrentQIndex] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [totalScore, setTotalScore] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', null
+
+  const startTest = () => {
+    setStep('test');
+    setCurrentQIndex(0);
+    setAnswers({});
+    setTotalScore(null);
+    setSaveStatus(null);
+  };
+
+  const handleAnswer = (value) => {
+    setAnswers({
+      ...answers,
+      [currentQIndex]: value
+    });
+    
+    // 자동으로 다음 문항으로 넘어가기 (약간의 딜레이 후)
+    if (currentQIndex < QUESTIONS.length - 1) {
+      setTimeout(() => {
+        setCurrentQIndex(currentQIndex + 1);
+      }, 300);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQIndex > 0) {
+      setCurrentQIndex(currentQIndex - 1);
+    }
+  };
+
+  const calculateResult = async () => {
+    let score = 0;
+    QUESTIONS.forEach((q, index) => {
+      const answerValue = answers[index];
+      if (q.isReverse) {
+        score += (3 - answerValue); // 역문항 점수 변환
+      } else {
+        score += answerValue;
+      }
+    });
+    
+    setTotalScore(score);
+    setStep('result');
+    
+    // 구글 스프레드시트(GAS)에 결과 저장
+    await saveResultToDB(score, answers);
+  };
+
+  const saveResultToDB = async (score, finalAnswers) => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        timestamp: new Date().toLocaleString(), // 보기 편한 시간 형식으로 변환
+        score: score,
+        answers: finalAnswers
+      };
+      
+      // GAS로 POST 요청 보내기 (CORS 이슈 방지를 위해 text/plain 사용)
+      await fetch(GAS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      setSaveStatus('success');
+    } catch (error) {
+      console.error("데이터 저장 실패:", error);
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getInterpretation = (score) => {
+    if (score >= 25) {
+      return {
+        level: "높은 자아존중감",
+        desc: "자신을 긍정적으로 평가하고 있으며, 자신의 가치를 잘 인정하고 있습니다. 현재의 건강한 마음가짐을 잘 유지하세요.",
+        color: "text-blue-600",
+        bg: "bg-blue-50"
+      };
+    } else if (score >= 15) {
+      return {
+        level: "보통의 자아존중감",
+        desc: "일반적이고 정상적인 수준의 자아존중감을 가지고 있습니다. 상황에 따라 자신감이 변동될 수 있으나 전반적으로 균형 잡힌 시각을 갖고 있습니다.",
+        color: "text-emerald-600",
+        bg: "bg-emerald-50"
+      };
+    } else {
+      return {
+        level: "낮은 자아존중감",
+        desc: "현재 자신에 대한 평가가 다소 낮은 편입니다. 자신을 너무 자책하기보다는 작은 성취부터 칭찬해주는 연습이 필요할 수 있습니다.",
+        color: "text-rose-600",
+        bg: "bg-rose-50"
+      };
+    }
+  };
+
+  // 진행률 계산
+  const progress = ((currentQIndex) / QUESTIONS.length) * 100;
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300">
+        
+        {/* --- 1. 시작 화면 --- */}
+        {step === 'intro' && (
+          <div className="p-8 md:p-12 text-center">
+            <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold mb-4 text-slate-900">자아존중감 테스트</h1>
+            <p className="text-slate-600 mb-8 leading-relaxed">
+              본 테스트는 심리학 분야에서 가장 널리 사용되는 <strong>로젠버그 자아존중감 척도(RSES)</strong>를 기반으로 합니다.<br/><br/>
+              총 10문항으로 구성되어 있으며, 각 문항을 읽고 평소 자신의 생각과 가장 일치하는 항목을 선택해 주세요. 직관적으로 떠오르는 답변을 고르는 것이 가장 정확합니다.
+            </p>
+            <button 
+              onClick={startTest}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all flex items-center justify-center mx-auto gap-2"
+            >
+              테스트 시작하기 <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+
+        {/* --- 2. 검사 화면 --- */}
+        {step === 'test' && (
+          <div className="p-8 md:p-12">
+            <div className="mb-8">
+              <div className="flex justify-between text-sm text-slate-500 mb-2 font-medium">
+                <span>진행 상황</span>
+                <span>{currentQIndex + 1} / {QUESTIONS.length}</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2.5">
+                <div 
+                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="min-h-[200px] flex flex-col justify-center mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-8 text-center leading-tight">
+                Q{currentQIndex + 1}. {QUESTIONS[currentQIndex].text}
+              </h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {OPTIONS.map((option) => {
+                  const isSelected = answers[currentQIndex] === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => handleAnswer(option.value)}
+                      className={`py-4 px-6 rounded-xl border-2 text-lg font-medium transition-all
+                        ${isSelected 
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
+                          : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-600'
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
+              <button 
+                onClick={handlePrevious}
+                disabled={currentQIndex === 0}
+                className={`flex items-center gap-1 font-medium ${currentQIndex === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:text-indigo-600'}`}
+              >
+                <ChevronLeft size={20} /> 이전 문항
+              </button>
+              
+              {currentQIndex === QUESTIONS.length - 1 ? (
+                <button 
+                  onClick={calculateResult}
+                  disabled={answers[currentQIndex] === undefined}
+                  className={`py-2 px-6 rounded-full font-semibold flex items-center gap-2 transition-all
+                    ${answers[currentQIndex] === undefined 
+                      ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+                    }`}
+                >
+                  결과 보기 <ChevronRight size={20} />
+                </button>
+              ) : (
+                <span className="text-slate-400 text-sm">
+                  {answers[currentQIndex] !== undefined ? '다음 문항으로 이동 중...' : '답변을 선택해 주세요'}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- 3. 결과 화면 --- */}
+        {step === 'result' && (
+          <div className="p-8 md:p-12">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">테스트 결과</h2>
+              <p className="text-slate-500">당신의 자아존중감 점수는 총 30점 만점에</p>
+            </div>
+
+            <div className="flex justify-center mb-8">
+              <div className={`relative flex items-center justify-center w-40 h-40 rounded-full border-8 ${getInterpretation(totalScore).color.replace('text', 'border')} ${getInterpretation(totalScore).bg}`}>
+                <span className={`text-5xl font-black ${getInterpretation(totalScore).color}`}>
+                  {totalScore}
+                </span>
+                <span className="absolute bottom-4 text-sm font-medium text-slate-500">점</span>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-2xl mb-8 text-center ${getInterpretation(totalScore).bg}`}>
+              <h3 className={`text-xl font-bold mb-3 ${getInterpretation(totalScore).color}`}>
+                {getInterpretation(totalScore).level}
+              </h3>
+              <p className="text-slate-700 leading-relaxed">
+                {getInterpretation(totalScore).desc}
+              </p>
+            </div>
+
+            {/* DB 저장 상태 알림 */}
+            <div className="mb-8 flex justify-center">
+              {isSaving ? (
+                <div className="flex items-center gap-2 text-slate-500 text-sm font-medium bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
+                  <RefreshCcw size={16} className="animate-spin" />
+                  <span>결과를 데이터베이스에 저장하는 중...</span>
+                </div>
+              ) : saveStatus === 'success' ? (
+                <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
+                  <CheckCircle2 size={16} />
+                  <span>연구/통계 데이터베이스에 성공적으로 저장되었습니다.</span>
+                </div>
+              ) : saveStatus === 'error' ? (
+                <div className="flex items-center gap-2 text-rose-600 text-sm font-medium bg-rose-50 px-4 py-2 rounded-full border border-rose-200">
+                  <AlertCircle size={16} />
+                  <span>저장에 실패했습니다. 관리자에게 문의해주세요.</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex justify-center mt-8">
+              <button 
+                onClick={startTest}
+                className="flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-800 transition-colors bg-indigo-50 px-6 py-3 rounded-full"
+              >
+                <RefreshCcw size={18} /> 테스트 다시하기
+              </button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
