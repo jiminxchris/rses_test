@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, RefreshCcw, CheckCircle2, AlertCircle, Database } from 'lucide-react';
+import { ChevronRight, ChevronLeft, RefreshCcw, CheckCircle2, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 
 // 구글 앱스 스크립트(GAS) 웹앱 URL (배포 후 생성된 URL을 여기에 붙여넣으세요)
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwc_cObbA036QZpyDaer4sD1LuFK5sePuExwll7skB_hGTuxGQVS5BmrBQjw8dMoeTn/exec";
 
 // --- 로젠버그 자아존중감 척도 (RSES) 문항 ---
 // 점수 산정: 매우 그렇지 않다(0), 그렇지 않다(1), 그렇다(2), 매우 그렇다(3)
-// isReverse가 true인 역문항은 점수를 반대로 계산합니다 (0->3, 1->2, 2->1, 3->0).
 const QUESTIONS = [
   { id: 1, text: "나는 내가 다른 사람들과 마찬가지로 가치 있는 사람이라고 생각한다.", isReverse: false },
   { id: 2, text: "나는 좋은 성품을 가졌다고 생각한다.", isReverse: false },
@@ -27,6 +26,27 @@ const OPTIONS = [
   { label: "매우 그렇다", value: 3 }
 ];
 
+// --- API Retry 로직 구현 (지수 백오프) ---
+const fetchWithRetry = async (url, options) => {
+  const delays = [1000, 2000, 4000, 8000, 16000];
+  let lastError;
+  
+  for (let i = 0; i < delays.length + 1; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+      if (i < delays.length) {
+        // 실패 시 콘솔에 로그를 남기지 않고 조용히 재시도합니다.
+        await new Promise(resolve => setTimeout(resolve, delays[i]));
+      }
+    }
+  }
+  throw lastError; // 모든 재시도 실패 시 에러 던지기
+};
+
 export default function App() {
   const [step, setStep] = useState('intro'); // intro, test, result
   const [currentQIndex, setCurrentQIndex] = useState(0);
@@ -34,6 +54,11 @@ export default function App() {
   const [totalScore, setTotalScore] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', null
+  
+  // AI 피드백 관련 상태
+  const [aiFeedback, setAiFeedback] = useState(null);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiError, setAiError] = useState(null);
 
   const startTest = () => {
     setStep('test');
@@ -41,6 +66,8 @@ export default function App() {
     setAnswers({});
     setTotalScore(null);
     setSaveStatus(null);
+    setAiFeedback(null);
+    setAiError(null);
   };
 
   const handleAnswer = (value) => {
@@ -85,12 +112,11 @@ export default function App() {
     setIsSaving(true);
     try {
       const payload = {
-        timestamp: new Date().toLocaleString(), // 보기 편한 시간 형식으로 변환
+        timestamp: new Date().toLocaleString(),
         score: score,
         answers: finalAnswers
       };
       
-      // GAS로 POST 요청 보내기 (CORS 이슈 방지를 위해 text/plain 사용)
       await fetch(GAS_URL, {
         method: 'POST',
         headers: {
@@ -105,6 +131,57 @@ export default function App() {
       setSaveStatus('error');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // --- Gemini API 연동 로직 ---
+  const generateAIFeedback = async () => {
+    setIsGeneratingAI(true);
+    setAiError(null);
+    setAiFeedback(null);
+    
+    try {
+      // API Key는 실행 환경에서 동적으로 주입됩니다.
+      const apiKey = ""; 
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+      // 사용자의 응답 내용을 AI가 이해하기 쉬운 텍스트로 변환
+      const answerDetails = QUESTIONS.map((q, i) => {
+        const selectedOption = OPTIONS.find(o => o.value === answers[i])?.label;
+        return `문항 ${q.id}: "${q.text}"\n답변: ${selectedOption}`;
+      }).join('\n\n');
+
+      const systemPrompt = `당신은 공감 능력이 뛰어나고 따뜻한 전문 심리 상담가입니다. 
+      내담자의 '로젠버그 자아존중감 척도(RSES)' 응답 데이터를 분석하여 맞춤형 피드백을 제공해야 합니다.
+      1. 총점과 세부 응답 패턴을 바탕으로 현재 내담자의 심리 상태를 1~2문단으로 따뜻하게 다독여주세요.
+      2. 내담자의 응답 패턴에 맞춰, 일상에서 쉽게 실천할 수 있는 자존감 향상(혹은 유지) 조언 2~3가지를 제안해주세요.
+      3. 마크다운 특수기호(**, # 등)는 사용하지 말고, 줄바꿈과 적절한 이모지를 활용하여 깔끔한 평문으로 작성해주세요.`;
+
+      const userPrompt = `[내담자 테스트 결과]\n총점: ${totalScore}/30점\n\n[상세 응답 내용]\n${answerDetails}\n\n위 응답을 바탕으로 저를 위한 맞춤형 분석과 따뜻한 조언을 부탁드립니다.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+
+      const data = await fetchWithRetry(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!text) {
+        throw new Error("AI 응답을 받아오지 못했습니다.");
+      }
+      
+      setAiFeedback(text);
+      
+    } catch (error) {
+      setAiError("AI 분석을 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsGeneratingAI(false);
     }
   };
 
@@ -133,7 +210,6 @@ export default function App() {
     }
   };
 
-  // 진행률 계산
   const progress = ((currentQIndex) / QUESTIONS.length) * 100;
 
   return (
@@ -259,6 +335,53 @@ export default function App() {
               </p>
             </div>
 
+            {/* --- AI 맞춤 분석 섹션 --- */}
+            <div className="mb-8 mt-12 border-t border-slate-100 pt-8">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">더 자세한 나의 심리 상태가 궁금하다면?</h3>
+                <p className="text-sm text-slate-500">각 문항의 응답 패턴을 AI가 분석하여 나만의 맞춤 조언을 제공합니다.</p>
+              </div>
+
+              {!aiFeedback && !isGeneratingAI && (
+                <button
+                  onClick={generateAIFeedback}
+                  className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={20} />
+                  ✨ AI 심리 상담사에게 맞춤 분석 받기 ✨
+                </button>
+              )}
+
+              {isGeneratingAI && (
+                <div className="w-full bg-slate-50 rounded-2xl p-8 flex flex-col items-center justify-center text-slate-500 border border-slate-200">
+                  <Loader2 className="animate-spin mb-4" size={32} />
+                  <p className="font-medium animate-pulse">상담사가 응답 패턴을 신중하게 분석하고 있습니다...</p>
+                </div>
+              )}
+
+              {aiError && (
+                <div className="w-full bg-rose-50 text-rose-600 rounded-2xl p-6 flex flex-col items-center justify-center border border-rose-200 text-center">
+                  <AlertCircle size={28} className="mb-2" />
+                  <p className="font-medium">{aiError}</p>
+                  <button onClick={generateAIFeedback} className="mt-4 underline text-sm hover:text-rose-800">
+                    다시 시도하기
+                  </button>
+                </div>
+              )}
+
+              {aiFeedback && (
+                <div className="w-full bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-6 md:p-8 border border-violet-100 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
+                  <h4 className="flex items-center gap-2 text-violet-800 font-bold text-lg mb-4">
+                    <Sparkles size={20} /> AI 심리 상담사의 따뜻한 조언
+                  </h4>
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+                    {aiFeedback}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* DB 저장 상태 알림 */}
             <div className="mb-8 flex justify-center">
               {isSaving ? (
@@ -282,7 +405,7 @@ export default function App() {
             <div className="flex justify-center mt-8">
               <button 
                 onClick={startTest}
-                className="flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-800 transition-colors bg-indigo-50 px-6 py-3 rounded-full"
+                className="flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-800 transition-colors bg-indigo-50 hover:bg-indigo-100 px-6 py-3 rounded-full"
               >
                 <RefreshCcw size={18} /> 테스트 다시하기
               </button>
