@@ -3,112 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>자아존중감 테스트</title>
+    <title>종합 자아존중감 및 자기효능감 테스트</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (CDN) -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* 추가적인 커스텀 애니메이션 등이 필요할 경우 여기에 작성합니다 */
         .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.4s ease-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        /* 라디오 버튼 커스텀 (모바일 터치 최적화) */
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans text-slate-800">
 
-    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300">
+    <div class="w-full max-w-3xl bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-300 border border-slate-100">
         
         <!-- ==================== 1. 시작 화면 ==================== -->
-        <div id="step-intro" class="p-8 md:p-12 text-center fade-in">
-            <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="clipboard-check" class="w-10 h-10"></i>
+        <div id="step-intro" class="p-8 md:p-14 text-center fade-in">
+            <div class="w-24 h-24 bg-gradient-to-br from-indigo-100 to-blue-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <i data-lucide="brain-circuit" class="w-12 h-12"></i>
             </div>
-            <h1 class="text-3xl font-bold mb-4 text-slate-900">자아존중감 테스트</h1>
-            <p class="text-slate-600 mb-8 leading-relaxed">
-                본 테스트는 심리학 분야에서 가장 널리 사용되는 <strong>로젠버그 자아존중감 척도(RSES)</strong>를 기반으로 합니다.<br/><br/>
-                총 10문항으로 구성되어 있으며, 각 문항을 읽고 평소 자신의 생각과 가장 일치하는 항목을 선택해 주세요. 직관적으로 떠오르는 답변을 고르는 것이 가장 정확합니다.
+            <h1 class="text-3xl md:text-4xl font-extrabold mb-6 text-slate-900 tracking-tight">종합 자아존중감 & 자기효능감 검사</h1>
+            <p class="text-slate-600 mb-10 leading-relaxed text-lg text-left md:text-center px-4">
+                본 검사는 심리학 연구 및 임상 현장에서 널리 사용되는 <strong>로젠버그 자아존중감 척도(RSES)</strong>와 <strong>일반적 자기효능감 척도(GSES)</strong>를 결합한 전문 측정 도구입니다.<br/><br/>
+                총 <strong>20문항</strong>으로 구성되어 있으며, 자신의 감정적 가치(자존감)와 문제 해결에 대한 자신감(효능감)을 입체적으로 분석합니다. 너무 오래 생각하지 말고 처음 떠오르는 느낌대로 <strong>5점 척도</strong>에 체크해 주세요.
             </p>
-            <button onclick="startTest()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all flex items-center justify-center mx-auto gap-2">
-                테스트 시작하기 <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            <button onclick="startTest()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg py-4 px-10 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center mx-auto gap-2">
+                전문 테스트 시작하기 <i data-lucide="arrow-right" class="w-6 h-6"></i>
             </button>
         </div>
 
         <!-- ==================== 2. 검사 화면 ==================== -->
         <div id="step-test" class="p-8 md:p-12 hidden fade-in">
-            <div class="mb-8">
-                <div class="flex justify-between text-sm text-slate-500 mb-2 font-medium">
-                    <span>진행 상황</span>
-                    <span id="progress-text">1 / 10</span>
+            <div class="mb-10">
+                <div class="flex justify-between text-sm text-slate-500 mb-3 font-semibold tracking-wide">
+                    <span>검사 진행률</span>
+                    <span id="progress-text" class="text-indigo-600">1 / 20</span>
                 </div>
-                <div class="w-full bg-slate-100 rounded-full h-2.5">
-                    <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 10%"></div>
+                <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-blue-500 h-full rounded-full transition-all duration-500 ease-out" style="width: 5%"></div>
                 </div>
             </div>
 
-            <div class="min-h-[200px] flex flex-col justify-center mb-8">
-                <h2 id="question-text" class="text-2xl font-bold text-slate-800 mb-8 text-center leading-tight">
-                    Q1. 질문 내용
+            <div class="min-h-[250px] flex flex-col justify-center mb-8">
+                <div class="inline-block px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-sm font-medium mb-4 w-max mx-auto" id="question-category">
+                    측정 영역
+                </div>
+                <h2 id="question-text" class="text-2xl md:text-3xl font-bold text-slate-800 mb-10 text-center leading-snug">
+                    질문 내용이 여기에 표시됩니다.
                 </h2>
                 
-                <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- 옵션 버튼들이 동적으로 생성됩니다 -->
+                <div id="options-container" class="grid grid-cols-1 gap-3">
+                    <!-- 5점 척도 옵션 버튼 동적 생성 -->
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
-                <button id="btn-prev" onclick="handlePrevious()" class="flex items-center gap-1 font-medium text-slate-500 hover:text-indigo-600">
-                    <i data-lucide="chevron-left" class="w-5 h-5"></i> 이전 문항
+            <div class="flex justify-between items-center mt-10 pt-6 border-t border-slate-100">
+                <button id="btn-prev" onclick="handlePrevious()" class="flex items-center gap-2 font-semibold text-slate-500 hover:text-indigo-600 transition-colors py-2 px-4 rounded-lg hover:bg-slate-50">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i> 이전 문항
                 </button>
                 
                 <div id="btn-next-container">
-                    <!-- 다음/결과보기 버튼이 동적으로 생성됩니다 -->
+                    <!-- 다음/결과보기 버튼 -->
                 </div>
             </div>
         </div>
 
         <!-- ==================== 3. 결과 화면 ==================== -->
         <div id="step-result" class="p-8 md:p-12 hidden fade-in">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold text-slate-900 mb-2">테스트 결과</h2>
-                <p class="text-slate-500">당신의 자아존중감 점수는 총 30점 만점에</p>
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-extrabold text-slate-900 mb-3">심리 검사 결과 보고서</h2>
+                <p class="text-slate-500 text-lg">당신의 내면을 2가지 차원으로 정밀 분석한 결과입니다.</p>
             </div>
 
-            <div class="flex justify-center mb-8">
-                <div id="score-circle" class="relative flex items-center justify-center w-40 h-40 rounded-full border-8">
-                    <span id="score-number" class="text-5xl font-black">0</span>
-                    <span class="absolute bottom-4 text-sm font-medium text-slate-500">점</span>
+            <!-- 점수 대시보드 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <!-- 총점 -->
+                <div class="col-span-1 flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Total Score</span>
+                    <div id="score-circle" class="relative flex items-center justify-center w-32 h-32 rounded-full border-8 border-indigo-500 bg-white shadow-sm">
+                        <span id="score-number" class="text-4xl font-black text-indigo-600">0</span>
+                        <span class="absolute bottom-2 text-xs font-bold text-slate-400">/ 100</span>
+                    </div>
+                </div>
+
+                <!-- 세부 지표 -->
+                <div class="col-span-1 md:col-span-2 flex flex-col justify-center space-y-6 p-6 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                    <!-- 자존감 바 -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i> 자아존중감 (Self-Esteem)
+                            </span>
+                            <span id="esteem-score-text" class="text-lg font-black text-slate-800">0 / 50</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3">
+                            <div id="esteem-bar" class="bg-rose-500 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">자신의 가치에 대한 감정적, 평가적 만족도</p>
+                    </div>
+                    
+                    <!-- 효능감 바 -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="font-bold text-slate-700 flex items-center gap-2">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> 자기효능감 (Self-Efficacy)
+                            </span>
+                            <span id="efficacy-score-text" class="text-lg font-black text-slate-800">0 / 50</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-3">
+                            <div id="efficacy-bar" class="bg-amber-500 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">어려운 상황과 문제를 해결할 수 있다는 자신감</p>
+                    </div>
                 </div>
             </div>
 
-            <div id="interpretation-box" class="p-6 rounded-2xl mb-8 text-center">
-                <h3 id="interp-level" class="text-xl font-bold mb-3"></h3>
+            <div id="interpretation-box" class="p-6 rounded-2xl mb-10 text-center bg-indigo-50">
+                <h3 id="interp-level" class="text-xl font-bold mb-3 text-indigo-800"></h3>
                 <p id="interp-desc" class="text-slate-700 leading-relaxed"></p>
             </div>
 
             <!-- AI 맞춤 분석 섹션 -->
-            <div class="mb-8 mt-12 border-t border-slate-100 pt-8">
-                <div class="text-center mb-6">
-                    <h3 class="text-lg font-bold text-slate-800 mb-2">더 자세한 나의 심리 상태가 궁금하다면?</h3>
-                    <p class="text-sm text-slate-500">각 문항의 응답 패턴을 AI가 분석하여 나만의 맞춤 조언을 제공합니다.</p>
+            <div class="mb-10 mt-12 border-t border-slate-200 pt-10">
+                <div class="text-center mb-8">
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">전문가 수준의 AI 심층 분석</h3>
+                    <p class="text-slate-500">20개의 응답 패턴을 다각도로 분석하여 심리학적 인사이트를 제공합니다.</p>
                 </div>
                 <div id="ai-section-container">
-                    <!-- AI 버튼 / 로딩 / 결과가 동적으로 렌더링됩니다 -->
+                    <!-- AI 버튼 / 로딩 / 결과 동적 렌더링 -->
                 </div>
             </div>
 
             <!-- DB 저장 상태 알림 -->
-            <div id="save-status-container" class="mb-8 flex justify-center">
-                <!-- 저장 상태가 동적으로 렌더링됩니다 -->
-            </div>
+            <div id="save-status-container" class="mb-8 flex justify-center"></div>
 
-            <div class="flex justify-center mt-8">
-                <button onclick="startTest()" class="flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-800 transition-colors bg-indigo-50 hover:bg-indigo-100 px-6 py-3 rounded-full">
-                    <i data-lucide="refresh-ccw" class="w-5 h-5"></i> 테스트 다시하기
+            <div class="flex justify-center mt-10">
+                <button onclick="startTest()" class="flex items-center gap-2 text-slate-500 font-semibold hover:text-slate-800 transition-colors bg-slate-100 hover:bg-slate-200 px-6 py-3 rounded-full">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i> 테스트 다시하기
                 </button>
             </div>
         </div>
@@ -120,31 +163,45 @@
         // --- 환경 설정 ---
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwc_cObbA036QZpyDaer4sD1LuFK5sePuExwll7skB_hGTuxGQVS5BmrBQjw8dMoeTn/exec";
 
+        // 파트 1: 로젠버그 자아존중감 척도(RSES) - 10문항 / 파트 2: 일반적 자기효능감 척도(GSES) - 10문항
         const QUESTIONS = [
-            { id: 1, text: "나는 내가 다른 사람들과 마찬가지로 가치 있는 사람이라고 생각한다.", isReverse: false },
-            { id: 2, text: "나는 좋은 성품을 가졌다고 생각한다.", isReverse: false },
-            { id: 3, text: "나는 대체로 실패한 사람이라는 느낌이 든다.", isReverse: true },
-            { id: 4, text: "나는 대부분의 사람들과 같이 일을 잘 할 수 있다.", isReverse: false },
-            { id: 5, text: "나는 나 자신에 대해 자랑할 만한 것이 별로 없다.", isReverse: true },
-            { id: 6, text: "나는 내 자신에 대해 긍정적인 태도를 가지고 있다.", isReverse: false },
-            { id: 7, text: "나는 내 자신에 대해 대체로 만족한다.", isReverse: false },
-            { id: 8, text: "나는 내 자신을 좀 더 존중할 수 있었으면 좋겠다.", isReverse: true },
-            { id: 9, text: "나는 가끔 내 자신이 쓸모없는 사람이라는 느낌이 든다.", isReverse: true },
-            { id: 10, text: "나는 때때로 내가 좋지 않은 사람이라고 생각한다.", isReverse: true }
+            // 자존감 (Esteem)
+            { id: 1, category: 'esteem', text: "나는 내가 다른 사람들과 마찬가지로 가치 있는 사람이라고 생각한다.", isReverse: false },
+            { id: 2, category: 'esteem', text: "나는 좋은 성품을 가졌다고 생각한다.", isReverse: false },
+            { id: 3, category: 'esteem', text: "나는 대체로 실패한 사람이라는 느낌이 든다.", isReverse: true },
+            { id: 4, category: 'esteem', text: "나는 대부분의 사람들과 같이 일을 잘 할 수 있다.", isReverse: false },
+            { id: 5, category: 'esteem', text: "나는 나 자신에 대해 자랑할 만한 것이 별로 없다.", isReverse: true },
+            { id: 6, category: 'esteem', text: "나는 내 자신에 대해 긍정적인 태도를 가지고 있다.", isReverse: false },
+            { id: 7, category: 'esteem', text: "나는 내 자신에 대해 대체로 만족한다.", isReverse: false },
+            { id: 8, category: 'esteem', text: "나는 내 자신을 좀 더 존중할 수 있었으면 좋겠다.", isReverse: true },
+            { id: 9, category: 'esteem', text: "나는 가끔 내 자신이 쓸모없는 사람이라는 느낌이 든다.", isReverse: true },
+            { id: 10, category: 'esteem', text: "나는 때때로 내가 좋지 않은 사람이라고 생각한다.", isReverse: true },
+            // 자기효능감/자신감 (Efficacy)
+            { id: 11, category: 'efficacy', text: "어려운 문제가 생겨도 나는 노력하면 해결할 수 있다.", isReverse: false },
+            { id: 12, category: 'efficacy', text: "누군가 내 의견에 반대하더라도, 나는 내가 원하는 바를 이룰 방법을 찾을 수 있다.", isReverse: false },
+            { id: 13, category: 'efficacy', text: "나는 목표를 정하면, 그것을 달성할 수 있다고 굳게 믿는다.", isReverse: false },
+            { id: 14, category: 'efficacy', text: "예상치 못한 일이 발생해도, 나는 능숙하게 대처할 수 있다.", isReverse: false },
+            { id: 15, category: 'efficacy', text: "뜻밖의 상황에 직면해도, 나는 내 능력으로 극복할 수 있다.", isReverse: false },
+            { id: 16, category: 'efficacy', text: "나는 노력을 기울이면, 대부분의 문제를 해결할 수 있다.", isReverse: false },
+            { id: 17, category: 'efficacy', text: "나는 내 능력에 의지하여, 어떤 어려움이든 침착하게 대처할 수 있다.", isReverse: false },
+            { id: 18, category: 'efficacy', text: "문제에 부딪혔을 때, 나는 보통 여러 가지 해결책을 찾아낸다.", isReverse: false },
+            { id: 19, category: 'efficacy', text: "나는 곤경에 처하더라도, 대개 스스로 빠져나올 방법을 생각할 수 있다.", isReverse: false },
+            { id: 20, category: 'efficacy', text: "어떤 일이 닥치더라도, 나는 잘 대처할 수 있다.", isReverse: false }
         ];
 
+        // 5점 리커트 척도 (학술 표준)
         const OPTIONS = [
-            { label: "매우 그렇지 않다", value: 0 },
-            { label: "그렇지 않다", value: 1 },
-            { label: "그렇다", value: 2 },
-            { label: "매우 그렇다", value: 3 }
+            { label: "전혀 그렇지 않다", value: 1 },
+            { label: "대체로 그렇지 않다", value: 2 },
+            { label: "보통이다", value: 3 },
+            { label: "대체로 그렇다", value: 4 },
+            { label: "매우 그렇다", value: 5 }
         ];
 
-        // --- 상태 관리 변수 ---
         let step = 'intro';
         let currentQIndex = 0;
         let answers = {};
-        let totalScore = null;
+        let scores = { total: 0, esteem: 0, efficacy: 0 };
         let isSaving = false;
         let saveStatus = null;
         let aiFeedback = null;
@@ -153,163 +210,136 @@
 
         lucide.createIcons();
 
-        // --- 화면 렌더링 함수 ---
         function updateUI() {
             document.getElementById('step-intro').classList.toggle('hidden', step !== 'intro');
             document.getElementById('step-test').classList.toggle('hidden', step !== 'test');
             document.getElementById('step-result').classList.toggle('hidden', step !== 'result');
 
-            if (step === 'test') {
-                renderTestStep();
-            } else if (step === 'result') {
-                renderResultStep();
-            }
+            if (step === 'test') renderTestStep();
+            else if (step === 'result') renderResultStep();
             
             lucide.createIcons();
         }
 
         function renderTestStep() {
+            const q = QUESTIONS[currentQIndex];
             const progress = ((currentQIndex) / QUESTIONS.length) * 100;
+            
             document.getElementById('progress-text').innerText = `${currentQIndex + 1} / ${QUESTIONS.length}`;
             document.getElementById('progress-bar').style.width = `${progress}%`;
-
-            document.getElementById('question-text').innerText = `Q${currentQIndex + 1}. ${QUESTIONS[currentQIndex].text}`;
+            
+            document.getElementById('question-category').innerText = q.category === 'esteem' ? 'Part 1. 자아존중감 측정' : 'Part 2. 자기효능감(자신감) 측정';
+            document.getElementById('question-text').innerText = `${currentQIndex + 1}. ${q.text}`;
 
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
             OPTIONS.forEach(option => {
                 const isSelected = answers[currentQIndex] === option.value;
                 const btnClass = isSelected 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700' 
-                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-600';
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-md ring-2 ring-indigo-200' 
+                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 text-slate-600 bg-white';
                 
                 optionsContainer.innerHTML += `
-                    <button onclick="handleAnswer(${option.value})" class="py-4 px-6 rounded-xl border-2 text-lg font-medium transition-all ${btnClass}">
-                        ${option.label}
+                    <button onclick="handleAnswer(${option.value})" class="option-btn w-full text-left py-4 px-6 rounded-xl border-2 text-lg font-medium ${btnClass} flex items-center justify-between">
+                        <span>${option.label}</span>
+                        ${isSelected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-indigo-600"></i>' : '<div class="w-5 h-5 rounded-full border-2 border-slate-300"></div>'}
                     </button>
                 `;
             });
 
             const btnPrev = document.getElementById('btn-prev');
-            if (currentQIndex === 0) {
-                btnPrev.className = 'flex items-center gap-1 font-medium text-slate-300 cursor-not-allowed';
-                btnPrev.disabled = true;
-            } else {
-                btnPrev.className = 'flex items-center gap-1 font-medium text-slate-500 hover:text-indigo-600';
-                btnPrev.disabled = false;
-            }
+            btnPrev.disabled = currentQIndex === 0;
+            btnPrev.style.opacity = currentQIndex === 0 ? '0.3' : '1';
 
             const btnNextContainer = document.getElementById('btn-next-container');
             if (currentQIndex === QUESTIONS.length - 1) {
-                const hasAnswered = answers[currentQIndex] !== undefined;
-                if (hasAnswered) {
+                if (answers[currentQIndex] !== undefined) {
                     btnNextContainer.innerHTML = `
-                        <button onclick="calculateResult()" class="py-2 px-6 rounded-full font-semibold flex items-center gap-2 transition-all bg-indigo-600 text-white hover:bg-indigo-700 shadow-md">
-                            결과 보기 <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        <button onclick="calculateResult()" class="py-3 px-8 rounded-full font-bold flex items-center gap-2 bg-slate-900 text-white hover:bg-black shadow-lg hover:shadow-xl transition-all">
+                            분석 결과 보기 <i data-lucide="sparkles" class="w-5 h-5"></i>
                         </button>
                     `;
                 } else {
-                    btnNextContainer.innerHTML = `
-                        <button disabled class="py-2 px-6 rounded-full font-semibold flex items-center gap-2 transition-all bg-slate-200 text-slate-400 cursor-not-allowed">
-                            결과 보기 <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    `;
+                    btnNextContainer.innerHTML = `<span class="text-slate-400 text-sm font-medium">마지막 응답을 선택해주세요</span>`;
                 }
             } else {
-                if (answers[currentQIndex] !== undefined) {
-                    btnNextContainer.innerHTML = `<span class="text-slate-400 text-sm">다음 문항으로 이동 중...</span>`;
-                } else {
-                    btnNextContainer.innerHTML = `<span class="text-slate-400 text-sm">답변을 선택해 주세요</span>`;
-                }
+                btnNextContainer.innerHTML = `<span class="text-slate-400 text-sm font-medium">자동으로 넘어갑니다</span>`;
             }
         }
 
         function renderResultStep() {
-            const interpretation = getInterpretation(totalScore);
+            const interpretation = getInterpretation(scores.total);
 
-            const scoreCircle = document.getElementById('score-circle');
-            const scoreNumber = document.getElementById('score-number');
-            const interpBox = document.getElementById('interpretation-box');
-            
-            scoreCircle.className = `relative flex items-center justify-center w-40 h-40 rounded-full border-8 ${interpretation.color.replace('text', 'border')} ${interpretation.bg}`;
-            scoreNumber.className = `text-5xl font-black ${interpretation.color}`;
-            scoreNumber.innerText = totalScore;
-            
-            interpBox.className = `p-6 rounded-2xl mb-8 text-center ${interpretation.bg}`;
-            document.getElementById('interp-level').className = `text-xl font-bold mb-3 ${interpretation.color}`;
+            // 점수 UI 업데이트
+            document.getElementById('score-number').innerText = scores.total;
             document.getElementById('interp-level').innerText = interpretation.level;
             document.getElementById('interp-desc').innerText = interpretation.desc;
 
+            // 프로그레스 바 애니메이션 적용 (약간의 딜레이 후 실행)
+            setTimeout(() => {
+                document.getElementById('esteem-bar').style.width = `${(scores.esteem / 50) * 100}%`;
+                document.getElementById('esteem-score-text').innerText = `${scores.esteem} / 50`;
+                
+                document.getElementById('efficacy-bar').style.width = `${(scores.efficacy / 50) * 100}%`;
+                document.getElementById('efficacy-score-text').innerText = `${scores.efficacy} / 50`;
+            }, 100);
+
+            // AI 섹션 업데이트
             const aiContainer = document.getElementById('ai-section-container');
             if (isGeneratingAI) {
                 aiContainer.innerHTML = `
-                    <div class="w-full bg-slate-50 rounded-2xl p-8 flex flex-col items-center justify-center text-slate-500 border border-slate-200">
-                        <i data-lucide="loader-2" class="animate-spin mb-4 w-8 h-8"></i>
-                        <p class="font-medium animate-pulse">상담사가 응답 패턴을 신중하게 분석하고 있습니다...</p>
+                    <div class="w-full bg-slate-50 rounded-2xl p-10 flex flex-col items-center justify-center text-slate-500 border border-slate-200">
+                        <i data-lucide="loader-2" class="animate-spin mb-4 w-10 h-10 text-indigo-500"></i>
+                        <p class="font-bold text-slate-700 animate-pulse text-lg">상담사가 전문 소견을 작성하고 있습니다...</p>
+                        <p class="text-sm mt-2 text-slate-400">20개의 응답 패턴을 분석 중입니다 (약 5~10초 소요)</p>
                     </div>
                 `;
             } else if (aiError) {
-                // UI 상에 실제 에러 메시지를 표시하도록 변경
                 aiContainer.innerHTML = `
-                    <div class="w-full bg-rose-50 text-rose-600 rounded-2xl p-6 flex flex-col items-center justify-center border border-rose-200 text-center">
-                        <i data-lucide="alert-circle" class="w-7 h-7 mb-2"></i>
-                        <p class="font-medium text-lg mb-1">AI 분석을 가져올 수 없습니다.</p>
-                        <p class="text-sm opacity-80">${aiError}</p>
-                        <button onclick="generateAIFeedback()" class="mt-4 underline text-sm hover:text-rose-800">다시 시도하기</button>
+                    <div class="w-full bg-rose-50 text-rose-600 rounded-2xl p-8 flex flex-col items-center justify-center border border-rose-200 text-center">
+                        <i data-lucide="alert-triangle" class="w-10 h-10 mb-3 text-rose-500"></i>
+                        <p class="font-bold text-lg mb-1">분석 리포트를 생성할 수 없습니다.</p>
+                        <p class="text-sm opacity-80 mb-4 max-w-md">${aiError}</p>
+                        <button onclick="generateAIFeedback()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold py-2 px-6 rounded-full transition-colors">다시 시도하기</button>
                     </div>
                 `;
             } else if (aiFeedback) {
                 aiContainer.innerHTML = `
-                    <div class="w-full bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl p-6 md:p-8 border border-violet-100 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
-                        <h4 class="flex items-center gap-2 text-violet-800 font-bold text-lg mb-4">
-                            <i data-lucide="sparkles" class="w-5 h-5"></i> AI 심리 상담사의 따뜻한 조언
+                    <div class="w-full bg-white rounded-2xl p-8 md:p-10 border border-indigo-100 shadow-xl relative overflow-hidden text-left">
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+                        <h4 class="flex items-center gap-3 text-indigo-900 font-extrabold text-2xl mb-6 pb-4 border-b border-slate-100">
+                            <i data-lucide="book-open" class="w-7 h-7 text-indigo-500"></i> AI 심리 전문가 소견서
                         </h4>
-                        <div class="text-slate-700 leading-relaxed whitespace-pre-wrap">${aiFeedback}</div>
+                        <div class="text-slate-700 leading-loose whitespace-pre-wrap text-lg font-medium">${aiFeedback}</div>
                     </div>
                 `;
             } else {
                 aiContainer.innerHTML = `
-                    <button onclick="generateAIFeedback()" class="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="sparkles" class="w-5 h-5"></i>
-                        ✨ AI 심리 상담사에게 맞춤 분석 받기 ✨
+                    <button onclick="generateAIFeedback()" class="w-full bg-gradient-to-r from-slate-800 to-slate-900 hover:from-black hover:to-slate-800 text-white font-bold text-lg py-5 px-6 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 transform hover:-translate-y-1">
+                        <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i>
+                        나의 내면 패턴 심층 분석받기 (AI)
                     </button>
                 `;
             }
 
+            // DB 저장 알림
             const saveContainer = document.getElementById('save-status-container');
             if (isSaving) {
-                saveContainer.innerHTML = `
-                    <div class="flex items-center gap-2 text-slate-500 text-sm font-medium bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
-                        <i data-lucide="refresh-ccw" class="w-4 h-4 animate-spin"></i>
-                        <span>결과를 데이터베이스에 저장하는 중...</span>
-                    </div>
-                `;
+                saveContainer.innerHTML = `<div class="flex items-center gap-2 text-slate-500 text-sm bg-slate-100 px-4 py-2 rounded-full"><i data-lucide="loader" class="w-4 h-4 animate-spin"></i> 데이터베이스 저장 중...</div>`;
             } else if (saveStatus === 'success') {
-                saveContainer.innerHTML = `
-                    <div class="flex items-center gap-2 text-emerald-600 text-sm font-medium bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
-                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                        <span>연구/통계 데이터베이스에 성공적으로 저장되었습니다.</span>
-                    </div>
-                `;
+                saveContainer.innerHTML = `<div class="flex items-center gap-2 text-emerald-600 text-sm bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100"><i data-lucide="check" class="w-4 h-4"></i> 연구 데이터로 안전하게 기록되었습니다.</div>`;
             } else if (saveStatus === 'error') {
-                saveContainer.innerHTML = `
-                    <div class="flex items-center gap-2 text-rose-600 text-sm font-medium bg-rose-50 px-4 py-2 rounded-full border border-rose-200">
-                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
-                        <span>저장에 실패했습니다. 관리자에게 문의해주세요.</span>
-                    </div>
-                `;
+                saveContainer.innerHTML = `<div class="flex items-center gap-2 text-rose-500 text-sm bg-rose-50 px-4 py-2 rounded-full border border-rose-100"><i data-lucide="x" class="w-4 h-4"></i> 저장에 실패했습니다. 관리자에게 문의하세요.</div>`;
             } else {
                 saveContainer.innerHTML = '';
             }
         }
 
-        // --- 상호작용 로직 ---
         function startTest() {
             step = 'test';
             currentQIndex = 0;
             answers = {};
-            totalScore = null;
+            scores = { total: 0, esteem: 0, efficacy: 0 };
             saveStatus = null;
             aiFeedback = null;
             aiError = null;
@@ -324,7 +354,7 @@
                 setTimeout(() => {
                     currentQIndex++;
                     updateUI();
-                }, 300);
+                }, 350);
             }
         }
 
@@ -336,33 +366,46 @@
         }
 
         async function calculateResult() {
-            let score = 0;
+            let esteem = 0;
+            let efficacy = 0;
+
             QUESTIONS.forEach((q, index) => {
                 const answerValue = answers[index];
-                if (q.isReverse) {
-                    score += (3 - answerValue); 
-                } else {
-                    score += answerValue;
-                }
+                // 역문항 점수 변환 (5점 척도: 1->5, 2->4, 3->3, 4->2, 5->1)
+                const finalValue = q.isReverse ? (6 - answerValue) : answerValue;
+                
+                if (q.category === 'esteem') esteem += finalValue;
+                if (q.category === 'efficacy') efficacy += finalValue;
             });
             
-            totalScore = score;
+            scores = {
+                total: esteem + efficacy,
+                esteem: esteem,
+                efficacy: efficacy
+            };
+            
             step = 'result';
             updateUI();
             
-            await saveResultToDB(score, answers);
+            await saveResultToDB(scores, answers);
         }
 
-        async function saveResultToDB(score, finalAnswers) {
+        // 구글 시트 저장 로직
+        async function saveResultToDB(scoresData, finalAnswers) {
             isSaving = true;
             updateUI();
 
             try {
+                // answers 객체를 배열로 변환
+                const answersArray = Array.from({length: 20}, (_, i) => finalAnswers[i]);
+                
                 const payload = {
                     action: 'save',
                     timestamp: new Date().toLocaleString(),
-                    score: score,
-                    answers: finalAnswers
+                    totalScore: scoresData.total,
+                    esteemScore: scoresData.esteem,
+                    efficacyScore: scoresData.efficacy,
+                    answers: answersArray
                 };
                 
                 await fetch(GAS_URL, {
@@ -382,39 +425,34 @@
             }
         }
 
-        // --- 개선된 API Retry 로직 구현 ---
         async function fetchWithRetry(url, options) {
-            options.redirect = 'follow'; // GAS 필수 사항
-            const delays = [1000, 2000, 4000]; // 지연 시간 단축
+            options.redirect = 'follow';
+            const delays = [1000, 2000, 4000];
             let lastError;
             
             for (let i = 0; i < delays.length + 1; i++) {
                 try {
                     const response = await fetch(url, options);
-                    const text = await response.text(); // 일단 텍스트로 가져와서 안전하게 파싱
+                    const text = await response.text();
                     
                     let data;
                     try {
                         data = JSON.parse(text);
                     } catch (e) {
-                        console.error("서버 응답 파싱 실패. 원본 데이터:", text);
-                        throw new Error("서버에서 올바른 데이터(JSON)를 반환하지 않았습니다. 구글 앱스 스크립트(GAS)가 최신 버전으로 배포되었는지 확인해주세요.");
+                        throw new Error("서버에서 올바른 데이터(JSON)를 반환하지 않았습니다. 백엔드 스크립트를 확인해주세요.");
                     }
 
                     if (!response.ok) throw new Error(data.message || `HTTP 에러: ${response.status}`);
                     return data;
                 } catch (error) {
-                    console.error(`요청 재시도 ${i}회 실패:`, error);
                     lastError = error;
-                    if (i < delays.length) {
-                        await new Promise(resolve => setTimeout(resolve, delays[i]));
-                    }
+                    if (i < delays.length) await new Promise(resolve => setTimeout(resolve, delays[i]));
                 }
             }
             throw lastError;
         }
 
-        // --- Gemini API 연동 로직 (GAS 프록시 사용) ---
+        // AI 프록시 요청
         async function generateAIFeedback() {
             isGeneratingAI = true;
             aiError = null;
@@ -422,14 +460,17 @@
             updateUI();
             
             try {
+                // 응답 내역 텍스트화
                 const answerDetails = QUESTIONS.map((q, i) => {
                     const selectedOption = OPTIONS.find(o => o.value === answers[i])?.label;
-                    return `문항 ${q.id}: "${q.text}"\n답변: ${selectedOption}`;
-                }).join('\n\n');
+                    return `[${q.category === 'esteem' ? '자존감' : '효능감'}] 문항: "${q.text}" -> 답변: ${selectedOption}`;
+                }).join('\n');
 
                 const payload = {
                     action: 'generateAI',
-                    totalScore: totalScore,
+                    totalScore: scores.total,
+                    esteemScore: scores.esteem,
+                    efficacyScore: scores.efficacy,
                     answerDetails: answerDetails
                 };
 
@@ -440,43 +481,35 @@
                 });
 
                 if (data.result === 'error' || !data.feedback) {
-                    // 서버(GAS)에서 내려준 구체적인 에러 메시지를 던집니다.
-                    throw new Error(data.message || "AI 응답 텍스트가 비어있습니다.");
+                    throw new Error(data.message || "AI 응답을 생성하지 못했습니다.");
                 }
                 
                 aiFeedback = data.feedback;
                 
             } catch (error) {
-                console.error("AI 분석 상세 에러 로그:", error);
-                // 숨겨져 있던 실제 에러 원인을 화면(aiError 변수)에 할당합니다.
-                aiError = error.message || "알 수 없는 네트워크 오류가 발생했습니다.";
+                aiError = error.message || "알 수 없는 오류가 발생했습니다.";
             } finally {
                 isGeneratingAI = false;
                 updateUI();
             }
         }
 
+        // 총점 기준(100점 만점) 해석
         function getInterpretation(score) {
-            if (score >= 25) {
+            if (score >= 80) {
                 return {
-                    level: "높은 자아존중감",
-                    desc: "자신을 긍정적으로 평가하고 있으며, 자신의 가치를 잘 인정하고 있습니다. 현재의 건강한 마음가짐을 잘 유지하세요.",
-                    color: "text-blue-600",
-                    bg: "bg-blue-50"
+                    level: "안정적이고 건강한 심리 상태",
+                    desc: "자신에 대한 사랑과 굳건한 믿음이 자리 잡고 있습니다. 예기치 못한 시련이 오더라도 스스로 해결할 수 있는 능력이 충분합니다. 현재의 훌륭한 마음가짐을 유지하세요."
                 };
-            } else if (score >= 15) {
+            } else if (score >= 60) {
                 return {
-                    level: "보통의 자아존중감",
-                    desc: "일반적이고 정상적인 수준의 자아존중감을 가지고 있습니다. 상황에 따라 자신감이 변동될 수 있으나 전반적으로 균형 잡힌 시각을 갖고 있습니다.",
-                    color: "text-emerald-600",
-                    bg: "bg-emerald-50"
+                    level: "보통 수준의 균형 잡힌 심리 상태",
+                    desc: "대체로 스스로를 가치 있다고 여기며 무난하게 문제를 해결해 나갑니다. 다만 특정 상황이나 타인의 평가에 따라 자신감이 다소 흔들릴 수 있습니다."
                 };
             } else {
                 return {
-                    level: "낮은 자아존중감",
-                    desc: "현재 자신에 대한 평가가 다소 낮은 편입니다. 자신을 너무 자책하기보다는 작은 성취부터 칭찬해주는 연습이 필요할 수 있습니다.",
-                    color: "text-rose-600",
-                    bg: "bg-rose-50"
+                    level: "심리적 지지와 회복이 필요한 상태",
+                    desc: "현재 스스로에 대한 평가가 다소 각박하고, 문제를 마주했을 때 위축되는 경향이 있습니다. 작은 목표부터 하나씩 달성해 나가며 스스로를 칭찬하는 연습이 필요합니다."
                 };
             }
         }
