@@ -202,6 +202,7 @@
         let currentQIndex = 0;
         let answers = {};
         let scores = { total: 0, esteem: 0, efficacy: 0 };
+        let sessionId = null; // 고유 세션 ID 변수 추가
         let isSaving = false;
         let saveStatus = null;
         let aiFeedback = null;
@@ -340,6 +341,7 @@
             currentQIndex = 0;
             answers = {};
             scores = { total: 0, esteem: 0, efficacy: 0 };
+            sessionId = Date.now().toString() + Math.floor(Math.random() * 1000); // 테스트 시작 시 고유 ID 발급
             saveStatus = null;
             aiFeedback = null;
             aiError = null;
@@ -401,6 +403,7 @@
                 
                 const payload = {
                     action: 'save',
+                    sessionId: sessionId, // 서버에 세션 ID 전달
                     timestamp: new Date().toLocaleString(),
                     totalScore: scoresData.total,
                     esteemScore: scoresData.esteem,
@@ -468,6 +471,7 @@
 
                 const payload = {
                     action: 'generateAI',
+                    sessionId: sessionId, // AI 분석 요청 시에도 세션 ID 전달
                     totalScore: scores.total,
                     esteemScore: scores.esteem,
                     efficacyScore: scores.efficacy,
