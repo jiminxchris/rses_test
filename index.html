@@ -140,23 +140,21 @@
             { label: "매우 그렇다", value: 3 }
         ];
 
-        // --- 상태 관리 변수 (React의 useState 역할) ---
-        let step = 'intro'; // 'intro', 'test', 'result'
+        // --- 상태 관리 변수 ---
+        let step = 'intro';
         let currentQIndex = 0;
         let answers = {};
         let totalScore = null;
         let isSaving = false;
-        let saveStatus = null; // 'success', 'error', null
+        let saveStatus = null;
         let aiFeedback = null;
         let isGeneratingAI = false;
         let aiError = null;
 
-        // 초기 아이콘 렌더링
         lucide.createIcons();
 
         // --- 화면 렌더링 함수 ---
         function updateUI() {
-            // 화면 전환
             document.getElementById('step-intro').classList.toggle('hidden', step !== 'intro');
             document.getElementById('step-test').classList.toggle('hidden', step !== 'test');
             document.getElementById('step-result').classList.toggle('hidden', step !== 'result');
@@ -167,20 +165,16 @@
                 renderResultStep();
             }
             
-            // 동적으로 생성된 HTML 내의 아이콘 활성화
             lucide.createIcons();
         }
 
         function renderTestStep() {
-            // 진행 상황
             const progress = ((currentQIndex) / QUESTIONS.length) * 100;
             document.getElementById('progress-text').innerText = `${currentQIndex + 1} / ${QUESTIONS.length}`;
             document.getElementById('progress-bar').style.width = `${progress}%`;
 
-            // 질문 내용
             document.getElementById('question-text').innerText = `Q${currentQIndex + 1}. ${QUESTIONS[currentQIndex].text}`;
 
-            // 옵션 버튼 렌더링
             const optionsContainer = document.getElementById('options-container');
             optionsContainer.innerHTML = '';
             OPTIONS.forEach(option => {
@@ -196,7 +190,6 @@
                 `;
             });
 
-            // 이전 버튼 상태
             const btnPrev = document.getElementById('btn-prev');
             if (currentQIndex === 0) {
                 btnPrev.className = 'flex items-center gap-1 font-medium text-slate-300 cursor-not-allowed';
@@ -206,7 +199,6 @@
                 btnPrev.disabled = false;
             }
 
-            // 다음/결과 버튼 상태
             const btnNextContainer = document.getElementById('btn-next-container');
             if (currentQIndex === QUESTIONS.length - 1) {
                 const hasAnswered = answers[currentQIndex] !== undefined;
@@ -235,12 +227,10 @@
         function renderResultStep() {
             const interpretation = getInterpretation(totalScore);
 
-            // 점수 및 해석 디자인 적용
             const scoreCircle = document.getElementById('score-circle');
             const scoreNumber = document.getElementById('score-number');
             const interpBox = document.getElementById('interpretation-box');
             
-            // 기존 색상 클래스 초기화 후 새 색상 적용
             scoreCircle.className = `relative flex items-center justify-center w-40 h-40 rounded-full border-8 ${interpretation.color.replace('text', 'border')} ${interpretation.bg}`;
             scoreNumber.className = `text-5xl font-black ${interpretation.color}`;
             scoreNumber.innerText = totalScore;
@@ -250,7 +240,6 @@
             document.getElementById('interp-level').innerText = interpretation.level;
             document.getElementById('interp-desc').innerText = interpretation.desc;
 
-            // AI 섹션 렌더링
             const aiContainer = document.getElementById('ai-section-container');
             if (isGeneratingAI) {
                 aiContainer.innerHTML = `
@@ -260,10 +249,12 @@
                     </div>
                 `;
             } else if (aiError) {
+                // UI 상에 실제 에러 메시지를 표시하도록 변경
                 aiContainer.innerHTML = `
                     <div class="w-full bg-rose-50 text-rose-600 rounded-2xl p-6 flex flex-col items-center justify-center border border-rose-200 text-center">
                         <i data-lucide="alert-circle" class="w-7 h-7 mb-2"></i>
-                        <p class="font-medium">${aiError}</p>
+                        <p class="font-medium text-lg mb-1">AI 분석을 가져올 수 없습니다.</p>
+                        <p class="text-sm opacity-80">${aiError}</p>
                         <button onclick="generateAIFeedback()" class="mt-4 underline text-sm hover:text-rose-800">다시 시도하기</button>
                     </div>
                 `;
@@ -286,7 +277,6 @@
                 `;
             }
 
-            // 저장 상태 알림 렌더링
             const saveContainer = document.getElementById('save-status-container');
             if (isSaving) {
                 saveContainer.innerHTML = `
@@ -328,9 +318,8 @@
 
         function handleAnswer(value) {
             answers[currentQIndex] = value;
-            updateUI(); // 선택한 버튼 시각적 피드백
+            updateUI(); 
             
-            // 자동으로 다음 문항으로 넘어가기 (약간의 딜레이 후)
             if (currentQIndex < QUESTIONS.length - 1) {
                 setTimeout(() => {
                     currentQIndex++;
@@ -351,7 +340,7 @@
             QUESTIONS.forEach((q, index) => {
                 const answerValue = answers[index];
                 if (q.isReverse) {
-                    score += (3 - answerValue); // 역문항 점수 변환
+                    score += (3 - answerValue); 
                 } else {
                     score += answerValue;
                 }
@@ -361,7 +350,6 @@
             step = 'result';
             updateUI();
             
-            // 구글 스프레드시트(GAS)에 결과 저장
             await saveResultToDB(score, answers);
         }
 
@@ -380,7 +368,8 @@
                 await fetch(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    redirect: 'follow'
                 });
                 
                 saveStatus = 'success';
@@ -393,17 +382,29 @@
             }
         }
 
-        // --- API Retry 로직 구현 (지수 백오프) ---
+        // --- 개선된 API Retry 로직 구현 ---
         async function fetchWithRetry(url, options) {
-            const delays = [1000, 2000, 4000, 8000, 16000];
+            options.redirect = 'follow'; // GAS 필수 사항
+            const delays = [1000, 2000, 4000]; // 지연 시간 단축
             let lastError;
             
             for (let i = 0; i < delays.length + 1; i++) {
                 try {
                     const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
+                    const text = await response.text(); // 일단 텍스트로 가져와서 안전하게 파싱
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        console.error("서버 응답 파싱 실패. 원본 데이터:", text);
+                        throw new Error("서버에서 올바른 데이터(JSON)를 반환하지 않았습니다. 구글 앱스 스크립트(GAS)가 최신 버전으로 배포되었는지 확인해주세요.");
+                    }
+
+                    if (!response.ok) throw new Error(data.message || `HTTP 에러: ${response.status}`);
+                    return data;
                 } catch (error) {
+                    console.error(`요청 재시도 ${i}회 실패:`, error);
                     lastError = error;
                     if (i < delays.length) {
                         await new Promise(resolve => setTimeout(resolve, delays[i]));
@@ -421,20 +422,17 @@
             updateUI();
             
             try {
-                // 사용자의 응답 내용을 텍스트로 변환
                 const answerDetails = QUESTIONS.map((q, i) => {
                     const selectedOption = OPTIONS.find(o => o.value === answers[i])?.label;
                     return `문항 ${q.id}: "${q.text}"\n답변: ${selectedOption}`;
                 }).join('\n\n');
 
-                // GAS로 보낼 페이로드 구성 (동작 구분을 위해 action 추가)
                 const payload = {
                     action: 'generateAI',
                     totalScore: totalScore,
                     answerDetails: answerDetails
                 };
 
-                // 프론트엔드에서 API 키 없이 GAS 서버로 POST 요청을 보냄
                 const data = await fetchWithRetry(GAS_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -442,13 +440,16 @@
                 });
 
                 if (data.result === 'error' || !data.feedback) {
-                    throw new Error(data.message || "AI 응답을 받아오지 못했습니다.");
+                    // 서버(GAS)에서 내려준 구체적인 에러 메시지를 던집니다.
+                    throw new Error(data.message || "AI 응답 텍스트가 비어있습니다.");
                 }
                 
                 aiFeedback = data.feedback;
                 
             } catch (error) {
-                aiError = "AI 분석을 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                console.error("AI 분석 상세 에러 로그:", error);
+                // 숨겨져 있던 실제 에러 원인을 화면(aiError 변수)에 할당합니다.
+                aiError = error.message || "알 수 없는 네트워크 오류가 발생했습니다.";
             } finally {
                 isGeneratingAI = false;
                 updateUI();
