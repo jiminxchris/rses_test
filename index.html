@@ -371,6 +371,7 @@
 
             try {
                 const payload = {
+                    action: 'save',
                     timestamp: new Date().toLocaleString(),
                     score: score,
                     answers: finalAnswers
@@ -412,7 +413,7 @@
             throw lastError;
         }
 
-        // --- Gemini API 연동 로직 ---
+        // --- Gemini API 연동 로직 (GAS 프록시 사용) ---
         async function generateAIFeedback() {
             isGeneratingAI = true;
             aiError = null;
@@ -420,41 +421,31 @@
             updateUI();
             
             try {
-                // API Key는 실행 환경에서 동적으로 주입됩니다.
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
+                // 사용자의 응답 내용을 텍스트로 변환
                 const answerDetails = QUESTIONS.map((q, i) => {
                     const selectedOption = OPTIONS.find(o => o.value === answers[i])?.label;
                     return `문항 ${q.id}: "${q.text}"\n답변: ${selectedOption}`;
                 }).join('\n\n');
 
-                const systemPrompt = `당신은 공감 능력이 뛰어나고 따뜻한 전문 심리 상담가입니다. 
-                내담자의 '로젠버그 자아존중감 척도(RSES)' 응답 데이터를 분석하여 맞춤형 피드백을 제공해야 합니다.
-                1. 총점과 세부 응답 패턴을 바탕으로 현재 내담자의 심리 상태를 1~2문단으로 따뜻하게 다독여주세요.
-                2. 내담자의 응답 패턴에 맞춰, 일상에서 쉽게 실천할 수 있는 자존감 향상(혹은 유지) 조언 2~3가지를 제안해주세요.
-                3. 마크다운 특수기호(**, # 등)는 사용하지 말고, 줄바꿈과 적절한 이모지를 활용하여 깔끔한 평문으로 작성해주세요.`;
-
-                const userPrompt = `[내담자 테스트 결과]\n총점: ${totalScore}/30점\n\n[상세 응답 내용]\n${answerDetails}\n\n위 응답을 바탕으로 저를 위한 맞춤형 분석과 따뜻한 조언을 부탁드립니다.`;
-
+                // GAS로 보낼 페이로드 구성 (동작 구분을 위해 action 추가)
                 const payload = {
-                    contents: [{ parts: [{ text: userPrompt }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                    action: 'generateAI',
+                    totalScore: totalScore,
+                    answerDetails: answerDetails
                 };
 
-                const data = await fetchWithRetry(url, {
+                // 프론트엔드에서 API 키 없이 GAS 서버로 POST 요청을 보냄
+                const data = await fetchWithRetry(GAS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
 
-                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                
-                if (!text) {
-                    throw new Error("AI 응답을 받아오지 못했습니다.");
+                if (data.result === 'error' || !data.feedback) {
+                    throw new Error(data.message || "AI 응답을 받아오지 못했습니다.");
                 }
                 
-                aiFeedback = text;
+                aiFeedback = data.feedback;
                 
             } catch (error) {
                 aiError = "AI 분석을 가져오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
